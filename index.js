@@ -1,38 +1,18 @@
 import express from "express";
-import bodyParser from "body-parser";
 import fetch from "node-fetch";
-import { google } from "googleapis";
-import { Readable } from "stream";
 
 const app = express();
-app.use(bodyParser.json());
 
-/* ============================
-   🔐 GOOGLE DRIVE AUTH
-============================ */
-const auth = new google.auth.GoogleAuth({
-  credentials: JSON.parse(process.env.GOOGLE_SERVICE_KEY),
-  scopes: ["https://www.googleapis.com/auth/drive.file"],
-});
-const drive = google.drive({ version: "v3", auth });
-
-/* ============================
-   📥 ENDPOINT PRINCIPAL
-============================ */
-app.post("/zpl", async (req, res) => {
+// ----------------- ENDPOINT PARA APP
+app.get("/zpl", async (req, res) => {
   try {
-    const { numero, codigo, carpetaId } = req.body;
+    const { numero, codigo } = req.query;
 
-    // Validación
-    if (!numero || !codigo || !carpetaId) {
-      return res.status(400).json({
-        error: "Faltan parámetros: numero, codigo o carpetaId",
-      });
+    if (!numero || !codigo) {
+      return res.status(400).json({ error: "Faltan parámetros: numero o codigo" });
     }
 
-    /* ============================
-       🖨️ ZPL DINÁMICO
-    ============================ */
+    // ----------------- ZPL DINÁMICO
     const zpl = `
 ^XA
 ~TA000
@@ -58,7 +38,7 @@ app.post("/zpl", async (req, res) => {
 ^LS0
 ^FO9,11^GB278,568,2^FS
 ^FO123,14^GB0,284,2^FS
-^FT88,36^A0R,25,15^FH\\^CI28^FDProducto:Bomba Autocebante  0,75HP^FS^CI27
+^FT88,36^A0R,25,15^FH\\^CI28^FDProducto:Bomba Autocebante 0,75HP^FS^CI27
 ^FT57,36^A0R,25,15^FH\\^CI28^FDPotencia:120w^FS^CI27
 ^FT26,36^A0R,25,15^FH\\^CI28^FDCaudal:12m3/h^FS^CI27
 ^FO9,295^GB278,0,2^FS
@@ -71,67 +51,32 @@ app.post("/zpl", async (req, res) => {
 ^LRN
 ^PQ1,,,Y
 ^XZ
-    `;
+`;
 
-    /* ============================
-   🖼️ Convertir ZPL → PNG
-============================ */
-const labelary = await fetch(
-  "http://api.labelary.com/v1/printers/8dpmm/labels/4x6/0/",
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: zpl, // ZPL crudo
-  }
-);
+    // ----------------- Convertir ZPL a PNG usando Labelary
+    const labelary = await fetch(
+      "http://api.labelary.com/v1/printers/8dpmm/labels/4x6/0/",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: zpl,
+      }
+    );
 
-if (!labelary.ok) {
-  throw new Error("Error en Labelary: " + (await labelary.text()));
-}
+    if (!labelary.ok) throw new Error(await labelary.text());
 
-const pngBuffer = Buffer.from(await labelary.arrayBuffer());
+    const pngBuffer = Buffer.from(await labelary.arrayBuffer());
 
+    // ----------------- Devolver PNG directamente
+    res.setHeader("Content-Type", "image/png");
+    res.send(pngBuffer);
 
-    /* ============================
-       📤 Subir PNG a Google Drive
-    ============================ */
-    const metadata = {
-      name: `${numero}.png`,
-      parents: [carpetaId], // 📌 viene desde AppSheet
-    };
-
-    const media = {
-      mimeType: "image/png",
-      body: Readable.from(pngBuffer),
-    };
-
-    const upload = await drive.files.create({
-      resource: metadata,
-      media,
-      fields: "id",
-    });
-
-    /* ============================
-       ✅ RESPUESTA
-    ============================ */
-    res.json({
-      status: "ok",
-      mensaje: "Etiqueta generada y subida correctamente",
-      fileId: upload.data.id,
-    });
   } catch (error) {
     console.error("ERROR:", error);
     res.status(500).json({ error: error.toString() });
   }
 });
 
-/* ============================
-   🚀 INICIAR SERVIDOR
-============================ */
+// ----------------- INICIAR SERVIDOR
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => {
-  console.log("Servidor activo en puerto " + PORT);
-});
-
+app.listen(PORT, () => console.log("Servidor activo en puerto " + PORT));
