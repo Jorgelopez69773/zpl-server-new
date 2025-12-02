@@ -55,7 +55,7 @@ app.get("/zpl", async (req, res) => {
 
     // ----------------- Convertir ZPL a PNG usando Labelary
     const labelary = await fetch(
-      "http://api.labelary.com/v1/printers/8dpmm/labels/4x6/0/",
+      "http://api.labelary.com/v1/printers/12dpmm/labels/0.984252x1.9685/0/",
       {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
