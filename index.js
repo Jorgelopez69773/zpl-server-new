@@ -74,22 +74,25 @@ app.post("/zpl", async (req, res) => {
     `;
 
     /* ============================
-       🖼️ Convertir ZPL → PNG
-    ============================ */
-    const labelary = await fetch(
-      "http://api.labelary.com/v1/printers/8dpmm/labels/4x6/0/",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/zpl" },
-        body: zpl,
-      }
-    );
+   🖼️ Convertir ZPL → PNG
+============================ */
+const labelary = await fetch(
+  "http://api.labelary.com/v1/printers/8dpmm/labels/4x6/0/",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: zpl, // ZPL crudo
+  }
+);
 
-    if (!labelary.ok) {
-      throw new Error("Error en Labelary: " + (await labelary.text()));
-    }
+if (!labelary.ok) {
+  throw new Error("Error en Labelary: " + (await labelary.text()));
+}
 
-    const pngBuffer = Buffer.from(await labelary.arrayBuffer());
+const pngBuffer = Buffer.from(await labelary.arrayBuffer());
+
 
     /* ============================
        📤 Subir PNG a Google Drive
