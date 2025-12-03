@@ -6,9 +6,9 @@ const app = express();
 // ----------------- ENDPOINT PARA APP
 app.get("/zpl", async (req, res) => {
   try {
-    const { numero, codigo } = req.query;
+    const { numero, codigo , tipo , potencia , caudal } = req.query;
 
-    if (!numero || !codigo) {
+    if (!numero || !codigo || !tipo || !potencia || !caudal) {
       return res.status(400).json({ error: "Faltan parámetros: numero o codigo" });
     }
 
@@ -38,9 +38,9 @@ app.get("/zpl", async (req, res) => {
 ^LS0
 ^FO9,11^GB278,568,2^FS
 ^FO123,14^GB0,284,2^FS
-^FT88,36^A0R,25,15^FH\\^CI28^FDProducto:Bomba Autocebante 0,75HP^FS^CI27
-^FT57,36^A0R,25,15^FH\\^CI28^FDPotencia:120w^FS^CI27
-^FT26,36^A0R,25,15^FH\\^CI28^FDCaudal:12m3/h^FS^CI27
+^FT88,36^A0R,25,15^FH\\^CI28^FDProducto:Bomba Autocebante ${tipo}^FS^CI27
+^FT57,36^A0R,25,15^FH\\^CI28^FDPotencia:${potencia}^FS^CI27
+^FT26,36^A0R,25,15^FH\\^CI28^FDCaudal:${caudal}^FS^CI27
 ^FO9,295^GB278,0,2^FS
 ^FT255,0^A0R,25,25^FB297,1,6,C^FH\\^CI28^FDBomba Autocebante\\^FS^CI27
 ^FT224,0^A0R,25,25^FB297,1,6,C^FH\\^CI28^FDN°:\\^FS^CI27
